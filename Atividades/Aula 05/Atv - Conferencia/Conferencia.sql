@@ -154,11 +154,39 @@ INSERT INTO Pessoa (cpf, nome_completo, email, telefone, sexo, data_nascimento, 
 VALUES
 ('123.456.789-00', 'Ana Clara Silva', 'ana@exemplo.com', '(11)91234-5678', 'F', '1995-06-21', 'Participante'),
 ('987.654.321-00', 'Carlos Souza', 'carlos@exemplo.com', '(11)99876-5432', 'M', '1988-11-10', 'Palestrante'),
-('456.789.123-00', 'Beatriz Lima', 'bia@exemplo.com', '(11)93456-7890', 'F', '2000-03-05', 'Organizador');
+('456.789.123-00', 'Beatriz Lima', 'bia@exemplo.com', '(11)93456-7890', 'F', '2000-03-05', 'Organizador'),
+('222.333.444-55', 'Alan Turing', 'turing@email.com', '(11) 92345-6789', 'M', '1912-06-23', 'Palestrante'),
+('333.444.555-66', 'Ada Lovelace', 'lovelace@email.com', '(21) 93456-7890', 'F', '1815-12-10', 'Organizador'),
+('444.555.666-77', 'Marie Curie', 'curie@email.com', '(31) 94567-8901', 'F', '1867-11-07', 'Participante'),
+('555.666.777-88', 'Nikola Tesla', 'tesla@email.com', '(41) 95678-9012', 'M', '1856-07-10', 'Palestrante'),
+('666.777.888-99', 'Rosalind Franklin', 'franklin@email.com', '(51) 96789-0123', 'F', '1920-07-25', 'Organizador'),
+('777.888.999-11', 'Carl Sagan', 'sagan@email.com', '(61) 97890-1234', 'M', '1934-11-09', 'Participante'),
+('888.999.000-22', 'Sigmund Freud', 'freud@email.com', '(71) 98901-2345', 'M', '1856-05-06', 'Palestrante'),
+('999.000.111-33', 'Charles Darwin', 'darwin@email.com', '(81) 99012-3456', 'M', '1809-02-12', 'Participante'),
+('111.222.333-44', 'Stephen Hawking', 'hawking@email.com', '(11) 91234-5678', 'M', '1942-01-08', 'Palestrante'),
+('222.444.555-99', 'Katherine Johnson', 'johnson@email.com', '(21) 92345-6789', 'F', '1918-08-26', 'Organizador'),
+('333.555.666-88', 'Galileu Galilei', 'galilei@email.com', '(31) 93456-7890', 'M', '1564-02-15', 'Participante'),
+('444.666.777-77', 'Isaac Newton', 'newton@email.com', '(41) 94567-8901', 'M', '1643-01-04', 'Palestrante'),
+('555.777.888-66', 'Leonhard Euler', 'euler@email.com', '(51) 95678-9012', 'M', '1707-04-15', 'Organizador'),
+('666.888.999-55', 'Niels Bohr', 'bohr@email.com', '(61) 96789-0123', 'M', '1885-10-07', 'Participante'),
+('777.999.000-44', 'Richard Feynman', 'feynman@email.com', '(61) 98765-4321', 'M', '1918-05-11', 'Palestrante'),
+('888.000.111-33', 'Alan Kay', 'kay@email.com', '(71) 97654-3210', 'M', '1940-05-17', 'Organizador'),
+('999.111.222-22', 'Barbara Liskov', 'liskov@email.com', '(81) 96543-2109', 'F', '1939-11-07', 'Participante'),
+('111.333.444-11', 'Claude Shannon', 'shannon@email.com', '(91) 95432-1098', 'M', '1916-04-30', 'Palestrante'),
+('222.555.666-00', 'Grace Hopper', 'hopper@email.com', '(11) 94321-0987', 'F', '1906-12-09', 'Organizador'),
+('333.666.777-99', 'Linus Torvalds', 'torvalds@email.com', '(21) 93210-9876', 'M', '1969-12-28', 'Participante'),
+('444.777.888-88', 'Tim Berners-Lee', 'berners-lee@email.com', '(31) 92109-8765', 'M', '1955-06-08', 'Palestrante'),
+('555.888.999-77', 'John von Neumann', 'neumann@email.com', '(41) 91098-7654', 'M', '1903-12-28', 'Organizador'),
+('666.999.000-66', 'Donald Knuth', 'knuth@email.com', '(51) 90987-6543', 'M', '1938-01-10', 'Participante'),
+('777.000.111-55', 'Edsger Dijkstra', 'dijkstra@email.com', '(61) 89876-5432', 'M', '1930-05-11', 'Palestrante');
 
 -- Universitário associado à primeira pessoa
 INSERT INTO Universitario (id_pessoa, codigo_universitario)
-VALUES (1, 2023001);
+VALUES 
+(1, 2023001),
+(2, 2023002),
+(3, 2023003),
+(4, 2023004);
 
 -- Inserir tema
 INSERT INTO Tema (nome, descricao, area_conhecimento)
@@ -170,7 +198,8 @@ VALUES ('Comissão de IA', 1, 'Organizadores de eventos de IA');
 
 -- Minicurso com orador (Carlos) e comissão criada
 INSERT INTO Minicurso (titulo, data_evento, hora_inicio, hora_fim, id_orador, id_comissao)
-VALUES ('Introdução ao Machine Learning', '2025-05-10', '09:00:00', '12:00:00', 2, 1);
+VALUES 
+('Introdução ao Machine Learning', '2025-05-10', '09:00:00', '12:00:00', 2, 1);
 
 -- Conferência principal
 INSERT INTO conferencia (nome, descricao, universidade, data_inicio, data_fim, id_orador_principal, local_conferencia, capacidade)
@@ -183,3 +212,7 @@ VALUES (1, 1);
 -- Participante inscrito no minicurso
 INSERT INTO Inscricao_Minicurso (id_pessoa, id_minicurso)
 VALUES (1, 1);
+
+SELECT * FROM pessoa;
+SELECT * FROM Universitario;
+SELECT * FROM Tema;
