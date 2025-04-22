@@ -190,16 +190,76 @@ VALUES
 
 -- Inserir tema
 INSERT INTO Tema (nome, descricao, area_conhecimento)
-VALUES ('Inteligência Artificial', 'Estudos sobre algoritmos de IA', 'Computação');
+VALUES 
+('Inteligência Artificial', 'Estudos sobre algoritmos de IA', 'Computação'),
+('Banco de Dados', 'Estudo de SGBDs', 'Computação'),
+('Redes', 'Infraestrutura de redes', 'Computação'),
+('Compiladores', 'Processamento de Linguagens', 'Computação'),
+('Inteligência Artificial', 'Estudo de redes neurais e aprendizado de máquina', 'Computação'),
+('Cibersegurança', 'Técnicas de proteção e mitigação de ataques', 'Computação'),
+('Biologia Molecular', 'Estudo da estrutura e função dos genes', 'Biociências'),
+('Astronomia', 'Exploração de corpos celestes e cosmologia', 'Ciências Exatas'),
+('Psicologia Cognitiva', 'Compreensão da mente humana e processos de pensamento', 'Ciências Humanas'),
+('Física Quântica', 'Estudo do comportamento de partículas subatômicas', 'Física'),
+('Matemática Pura', 'Teorias matemáticas abstratas', 'Matemática'),
+('Engenharia Aeroespacial', 'Projetos e desenvolvimento de aeronaves e espaçonaves', 'Engenharia'),
+('Computação Quântica', 'Uso de princípios quânticos para computação', 'Computação'),
+('Ciência de Dados', 'Análise de grandes volumes de dados para extração de conhecimento', 'Computação'),
+('Desenvolvimento de Jogos', 'Criação de jogos digitais e motores gráficos', 'Computação'),
+('Robótica', 'Desenvolvimento de robôs e sistemas automatizados', 'Engenharia'),
+('Nanotecnologia', 'Manipulação da matéria em escala nanométrica', 'Engenharia'),
+('Filosofia da Mente', 'Estudos sobre consciência, percepção e identidade', 'Ciências Humanas'),
+('Sociologia Digital', 'Impactos das tecnologias na sociedade contemporânea', 'Ciências Humanas'),
+('Ecologia Urbana', 'Interações entre organismos e ambiente em áreas urbanas', 'Biociências'),
+('Neurociência', 'Estudo do sistema nervoso e do cérebro', 'Biociências'),
+('Matemática Aplicada', 'Aplicações práticas de conceitos matemáticos em engenharia e ciências', 'Matemática'),
+('Astrofísica', 'Estudo físico de corpos celestes e fenômenos cósmicos', 'Física'),
+('Energias Renováveis', 'Fontes de energia sustentáveis como solar, eólica e biomassa', 'Engenharia Ambiental'),
+('Mudanças Climáticas', 'Análise das alterações climáticas e seus impactos ambientais', 'Ciências Ambientais');
 
 -- Comissão ligada ao tema
 INSERT INTO Comissao (nome, id_tema, descricao)
-VALUES ('Comissão de IA', 1, 'Organizadores de eventos de IA');
+VALUES 
+('Comissão de IA', 1, 'Organizadores de eventos de IA'),
+('Comissão de Banco de Dados', 1, 'Responsável por artigos sobre Banco de Dados'),
+('Comissão de Redes', 2, 'Responsável por artigos sobre Redes'),
+('Comissão de Compiladores', 3, 'Responsável por artigos sobre compiladores'),
+('Comissão de Inteligência Artificial', 4, 'Avanços em IA'),
+('Comissão de Cibersegurança', 5, 'Segurança da Informação e proteção de dados'),
+('Comissão de Biologia Molecular', 6, 'Pesquisas em DNA e genética'),
+('Comissão de Astronomia', 7, 'Estudos sobre o universo e astrofísica'),
+('Comissão de Psicologia Cognitiva', 8, 'Pesquisa em comportamento e cognição'),
+('Comissão de Física Quântica', 9, 'Pesquisas em mecânica quântica'),
+('Comissão de Matemática Pura', 10, 'Avanços matemáticos'),
+('Comissão de Engenharia Aeroespacial', 11, 'Projetos de aeronaves e foguetes'),
+('Comissão de Computação Quântica', 12, 'Aplicações e algoritmos em computação quântica'),
+('Comissão de Ciência de Dados', 13, 'Análise, mineração e visualização de dados'),
+('Comissão de Desenvolvimento de Jogos', 14, 'Design, mecânica e inteligência em jogos digitais'),
+('Comissão de Robótica', 15, 'Sistemas robóticos e automação inteligente'),
+('Comissão de Nanotecnologia', 16, 'Inovações em nanociência e engenharia molecular'),
+('Comissão de Filosofia da Mente', 17, 'Discussões sobre consciência, mente e identidade'),
+('Comissão de Sociologia Digital', 18, 'Estudos sociais na era digital'),
+('Comissão de Ecologia Urbana', 19, 'Soluções ecológicas para ambientes urbanos'),
+('Comissão de Neurociência', 20, 'Estudos avançados do cérebro e sistema nervoso'),
+('Comissão de Matemática Aplicada', 21, 'Modelagens e aplicações em diversas áreas'),
+('Comissão de Astrofísica', 22, 'Fenômenos cósmicos e evolução do universo'),
+('Comissão de Energias Renováveis', 23, 'Fontes limpas de energia e sustentabilidade'),
+('Comissão de Mudanças Climáticas', 24, 'Impactos e políticas ambientais globais');
 
 -- Minicurso com orador (Carlos) e comissão criada
 INSERT INTO Minicurso (titulo, data_evento, hora_inicio, hora_fim, id_orador, id_comissao)
 VALUES 
-('Introdução ao Machine Learning', '2025-05-10', '09:00:00', '12:00:00', 2, 1);
+('Introdução ao Machine Learning', '2025-05-10', '09:00:00', '12:00:00', 2, 1),
+('Introdução ao MySQL', '2025-06-10', '10:00:00', '12:00:00', 2, 1),
+('Redes Avançadas', '2025-06-12', '14:00:00', '16:00:00', 2, 2),
+('Fundamentos de IA', '2025-06-14', '09:00:00', '11:00:00', 5, 3),
+('Proteção contra Ataques Cibernéticos', '2025-06-15', '13:00:00', '15:00:00', 6, 4),
+('Descobrindo o DNA', '2025-06-16', '14:00:00', '16:00:00', 7, 5),
+('Exploração Espacial', '2025-06-17', '10:00:00', '12:00:00', 8, 6),
+('Psicologia e Tecnologia', '2025-06-18', '08:00:00', '10:00:00', 9, 7),
+('Introdução à Física Quântica', '2025-06-19', '10:00:00', '12:00:00', 25, 9),
+('Topologia e Geometria', '2025-06-20', '14:00:00', '16:00:00', 26, 10),
+('Exploração Espacial Avançada', '2025-06-21', '09:00:00', '11:00:00', 27, 11);
 
 -- Conferência principal
 INSERT INTO conferencia (nome, descricao, universidade, data_inicio, data_fim, id_orador_principal, local_conferencia, capacidade)
