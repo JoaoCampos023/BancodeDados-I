@@ -30,16 +30,25 @@ CREATE TABLE departamentos (
     INDEX idx_departamento_nome (nome)
 );
 
--- Tabela de Cargos
-CREATE TABLE cargos (
+-- Tabela de Cargos Gerais
+CREATE TABLE cargos_gerais (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
+    nome VARCHAR(100) NOT NULL UNIQUE,
     descricao VARCHAR(255),
-    departamento_id INT,
     nivel VARCHAR(50),
-    FOREIGN KEY (departamento_id) REFERENCES departamentos(id),
-    INDEX idx_cargo_nome (nome),
-    INDEX idx_cargo_departamento (departamento_id)
+    INDEX idx_cargo_geral_nome (nome)
+);
+
+-- Tabela de Ligação entre Cargos e Departamentos (Muitos para Muitos)
+CREATE TABLE cargos_departamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cargo_geral_id INT NOT NULL,
+    departamento_id INT NOT NULL,
+    descricao VARCHAR(255),
+    FOREIGN KEY (cargo_geral_id) REFERENCES cargos_gerais(id) ON DELETE CASCADE,
+    FOREIGN KEY (departamento_id) REFERENCES departamentos(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_cargo_departamento (cargo_geral_id, departamento_id),
+    INDEX idx_cargo_departamento (cargo_geral_id, departamento_id)
 );
 
 -- Tabela de Graus de Parentesco
@@ -60,40 +69,20 @@ CREATE TABLE dependentes (
     INDEX idx_dependente_cliente (cliente_id)
 );
 
-
 -- Tabela de Histórico Profissional
 CREATE TABLE historico_profissional (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id INT NOT NULL,
-    cargo_id INT NOT NULL,
-    departamento_id INT,
+    cargo_departamento_id INT NOT NULL,
     data_inicio DATE NOT NULL,
     data_fim DATE,
     is_atual BOOLEAN DEFAULT FALSE,
     salario DECIMAL(10,2),
     motivo_saida VARCHAR(255),
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
-    FOREIGN KEY (cargo_id) REFERENCES cargos(id),
-    FOREIGN KEY (departamento_id) REFERENCES departamentos(id),
+    FOREIGN KEY (cargo_departamento_id) REFERENCES cargos_departamentos(id),
     CHECK (data_fim IS NULL OR data_fim > data_inicio),
     INDEX idx_historico_cliente (cliente_id),
-    INDEX idx_historico_cargo (cargo_id),
-    INDEX idx_historico_departamento (departamento_id),
+    INDEX idx_historico_cargo_dep (cargo_departamento_id),
     INDEX idx_historico_periodo (data_inicio, data_fim)
-);
-
-
--- Tabela para Situação Atual do Cliente
-CREATE TABLE situacao_atual (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL UNIQUE,
-    cargo_id INT NOT NULL,
-    departamento_id INT NOT NULL,
-    data_inicio DATE NOT NULL,
-    salario DECIMAL(10,2),
-    ultima_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
-    FOREIGN KEY (cargo_id) REFERENCES cargos(id),
-    FOREIGN KEY (departamento_id) REFERENCES departamentos(id),
-    INDEX idx_situacao_cliente (cliente_id)
 );
