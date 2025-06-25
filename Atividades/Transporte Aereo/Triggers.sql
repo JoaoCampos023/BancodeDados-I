@@ -52,14 +52,52 @@ BEGIN
 END //
 DELIMITER ;
 
--- (Observação: A tabela auditoria_voo precisaria ser criada primeiro)
-CREATE TABLE IF NOT EXISTS auditoria_voo (
-    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
-    id_voo INT NOT NULL,
-    status_anterior ENUM('Agendado', 'Embarque', 'Decolado', 'Aterrissado', 'Cancelado', 'Atrasado'),
-    status_novo ENUM('Agendado', 'Embarque', 'Decolado', 'Aterrissado', 'Cancelado', 'Atrasado'),
-    data_alteracao DATETIME,
-    usuario VARCHAR(50)
-);
+-- Trigger para atualizar milhas quando um voo é concluído
+DELIMITER //
+CREATE TRIGGER trg_atualizar_milhas_conclusao_voo
+AFTER INSERT ON historico_voos
+FOR EACH ROW
+BEGIN
+    -- Atualizar milhas para todos os clientes que voaram
+    UPDATE clientes c
+    JOIN reservas r ON c.id_cliente = r.id_cliente
+    JOIN config_poltronas_voo cpv ON r.id_config = cpv.id_config
+    SET 
+        c.milhas_accumuladas = c.milhas_accumuladas + 
+            CASE 
+                WHEN r.forma_pagamento != 'Milhas' THEN r.valor_total * 0.05  -- 5% do valor em milhas extras por voo concluído
+                ELSE 0
+            END
+    WHERE 
+        cpv.id_voo = NEW.id_voo 
+        AND r.status = 'Check-in realizado';
+END //
+DELIMITER ;
 
-DROP TABLE auditoria_voo;
+-- Trigger para verificar idade mínima do cliente
+DELIMITER //
+CREATE TRIGGER trg_verificar_idade_cliente
+BEFORE INSERT ON clientes
+FOR EACH ROW
+BEGIN
+    DECLARE idade INT;
+    SET idade = TIMESTAMPDIFF(YEAR, NEW.data_nascimento, CURDATE());
+    
+    IF idade < 12 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Clientes devem ter pelo menos 12 anos';
+    END IF;
+END //
+DELIMITER ;
+
+-- Trigger para registrar alterações em reservas
+DELIMITER //
+CREATE TRIGGER trg_log_alteracoes_reserva
+AFTER UPDATE ON reservas
+FOR EACH ROW
+BEGIN
+    IF OLD.status != NEW.status OR OLD.valor_total != NEW.valor_total THEN
+        INSERT INTO auditoria_reservas (id_reserva, status_anterior, status_novo, valor_anterior, valor_novo, data_alteracao, usuario)
+        VALUES (NEW.id_reserva, OLD.status, NEW.status, OLD.valor_total, NEW.valor_total, NOW(), CURRENT_USER());
+    END IF;
+END //
+DELIMITER ;

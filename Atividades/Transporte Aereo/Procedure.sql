@@ -128,3 +128,234 @@ BEGIN
     SELECT CONCAT(ROW_COUNT(), ' clientes promovidos') AS resultado;
 END //
 DELIMITER ;
+
+-- Procedure para check-in de passageiros
+DELIMITER //
+CREATE PROCEDURE realizar_checkin(
+    IN p_id_reserva INT,
+    IN p_numero_bagagens INT
+)
+BEGIN
+    DECLARE v_id_voo INT;
+    DECLARE v_id_cliente INT;
+    DECLARE v_nivel_cliente ENUM('Bronze', 'Prata', 'Ouro', 'Diamante');
+    
+    -- Verificar se a reserva existe e está confirmada
+    IF NOT EXISTS (SELECT 1 FROM reservas WHERE id_reserva = p_id_reserva AND status = 'Confirmada') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Reserva não encontrada ou não confirmada';
+    END IF;
+    
+    -- Obter informações do voo e cliente
+    SELECT cpv.id_voo, r.id_cliente, c.nivel_preferencia 
+    INTO v_id_voo, v_id_cliente, v_nivel_cliente
+    FROM reservas r
+    JOIN config_poltronas_voo cpv ON r.id_config = cpv.id_config
+    JOIN clientes c ON r.id_cliente = c.id_cliente
+    WHERE r.id_reserva = p_id_reserva;
+    
+    -- Verificar limite de bagagens
+    IF p_numero_bagagens > 
+        CASE v_nivel_cliente
+            WHEN 'Diamante' THEN 3
+            WHEN 'Ouro' THEN 2
+            WHEN 'Prata' THEN 1
+            ELSE 1
+        END THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Número de bagagens excede o permitido para seu nível';
+    END IF;
+    
+    -- Atualizar status da reserva
+    UPDATE reservas SET status = 'Check-in realizado' WHERE id_reserva = p_id_reserva;
+    
+    -- Registrar bagagens (se necessário)
+    -- (Aqui poderia inserir em uma tabela de bagagens)
+    
+    SELECT CONCAT('Check-in realizado com sucesso para a reserva ', p_id_reserva) AS mensagem;
+END //
+DELIMITER ;
+
+-- Procedure para cancelamento de voo com reembolso automático
+DELIMITER //
+CREATE PROCEDURE cancelar_voo_com_reembolso(
+    IN p_id_voo INT,
+    IN p_motivo TEXT
+)
+BEGIN
+    DECLARE v_count INT;
+    
+    -- Verificar se o voo existe e está agendado
+    SELECT COUNT(*) INTO v_count FROM voos 
+    WHERE id_voo = p_id_voo AND status = 'Agendado';
+    
+    IF v_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Voo não encontrado ou já cancelado/concluído';
+    END IF;
+    
+    -- Atualizar status do voo
+    UPDATE voos SET status = 'Cancelado' WHERE id_voo = p_id_voo;
+    
+    -- Registrar no histórico
+    INSERT INTO historico_voos (id_voo, horario_saida_real, horario_chegada_real, motivo_atraso)
+    VALUES (p_id_voo, NULL, NULL, p_motivo);
+    
+    -- Processar reembolsos para todas as reservas
+    UPDATE reservas r
+    JOIN config_poltronas_voo cpv ON r.id_config = cpv.id_config
+    SET 
+        r.status = 'Cancelada',
+        -- Registrar reembolso (na prática, aqui seria integrado com um sistema de pagamento)
+        r.valor_total = 0
+    WHERE 
+        cpv.id_voo = p_id_voo 
+        AND r.status IN ('Confirmada', 'Em espera', 'Check-in realizado');
+    
+    SELECT CONCAT('Voo ', p_id_voo, ' cancelado. ', ROW_COUNT(), ' reservas afetadas.') AS mensagem;
+END //
+DELIMITER ;
+
+-- Procedure para upgrade de classe com custo adicional
+DELIMITER //
+CREATE PROCEDURE upgrade_classe(
+    IN p_id_reserva INT,
+    IN p_nova_classe INT
+)
+BEGIN
+    DECLARE v_id_cliente INT;
+    DECLARE v_id_voo INT;
+    DECLARE v_id_poltrona_antiga INT;
+    DECLARE v_id_classe_antiga INT;
+    DECLARE v_preco_antigo DECIMAL(10,2);
+    DECLARE v_multiplicador_novo DECIMAL(3,2);
+    DECLARE v_preco_novo DECIMAL(10,2);
+    DECLARE v_diferenca DECIMAL(10,2);
+    DECLARE v_poltronas_disponiveis INT;
+    DECLARE v_nivel_cliente ENUM('Bronze', 'Prata', 'Ouro', 'Diamante');
+    
+    -- Obter informações da reserva atual
+    SELECT 
+        r.id_cliente, cpv.id_voo, cpv.id_poltrona, p.id_classe, r.valor_total,
+        c.nivel_preferencia
+    INTO 
+        v_id_cliente, v_id_voo, v_id_poltrona_antiga, v_id_classe_antiga, v_preco_antigo,
+        v_nivel_cliente
+    FROM reservas r
+    JOIN config_poltronas_voo cpv ON r.id_config = cpv.id_config
+    JOIN poltronas p ON cpv.id_poltrona = p.id_poltrona
+    JOIN clientes c ON r.id_cliente = c.id_cliente
+    WHERE r.id_reserva = p_id_reserva;
+    
+    -- Verificar se a reserva existe e está confirmada
+    IF v_id_cliente IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Reserva não encontrada';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM reservas WHERE id_reserva = p_id_reserva AND status = 'Confirmada') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Apenas reservas confirmadas podem ser alteradas';
+    END IF;
+    
+    -- Verificar se a nova classe é diferente e superior
+    IF p_nova_classe <= v_id_classe_antiga THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A nova classe deve ser superior à atual';
+    END IF;
+    
+    -- Obter multiplicador da nova classe
+    SELECT multiplicador_preco INTO v_multiplicador_novo
+    FROM classes WHERE id_classe = p_nova_classe;
+    
+    -- Calcular novo preço (base 1000 * multiplicador)
+    SET v_preco_novo = 1000.00 * v_multiplicador_novo;
+    
+    -- Aplicar desconto para clientes Diamante
+    IF v_nivel_cliente = 'Diamante' THEN
+        SET v_preco_novo = v_preco_novo * 0.9; -- 10% de desconto
+    END IF;
+    
+    -- Calcular diferença a pagar
+    SET v_diferenca = v_preco_novo - v_preco_antigo;
+    
+    -- Verificar se há poltronas disponíveis na nova classe
+    SELECT COUNT(*) INTO v_poltronas_disponiveis
+    FROM config_poltronas_voo cpv
+    JOIN poltronas p ON cpv.id_poltrona = p.id_poltrona
+    WHERE cpv.id_voo = v_id_voo 
+    AND p.id_classe = p_nova_classe
+    AND cpv.disponivel = TRUE;
+    
+    IF v_poltronas_disponiveis = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Não há poltronas disponíveis na classe selecionada';
+    END IF;
+    
+    -- Encontrar uma poltrona disponível na nova classe
+    SET @nova_poltrona_id = (
+        SELECT cpv.id_config
+        FROM config_poltronas_voo cpv
+        JOIN poltronas p ON cpv.id_poltrona = p.id_poltrona
+        WHERE cpv.id_voo = v_id_voo 
+        AND p.id_classe = p_nova_classe
+        AND cpv.disponivel = TRUE
+        LIMIT 1
+    );
+    
+    -- Liberar poltrona antiga
+    UPDATE config_poltronas_voo SET disponivel = TRUE 
+    WHERE id_poltrona = v_id_poltrona_antiga AND id_voo = v_id_voo;
+    
+    -- Ocupar nova poltrona
+    UPDATE config_poltronas_voo SET disponivel = FALSE 
+    WHERE id_config = @nova_poltrona_id;
+    
+    -- Atualizar reserva
+    UPDATE reservas 
+    SET 
+        id_config = @nova_poltrona_id,
+        valor_total = v_preco_novo,
+        preco_poltrona = v_preco_novo
+    WHERE id_reserva = p_id_reserva;
+    
+    SELECT 
+        'Upgrade realizado com sucesso' AS mensagem,
+        v_diferenca AS valor_adicional,
+        v_preco_novo AS novo_valor_total;
+END //
+DELIMITER ;
+
+-- Procedure para gerar relatório de ocupação por período
+DELIMITER //
+CREATE PROCEDURE relatorio_ocupacao_periodo(
+    IN p_data_inicio DATE,
+    IN p_data_fim DATE
+)
+BEGIN
+    SELECT 
+        v.id_voo,
+        v.numero_voo,
+        a.modelo AS aeronave,
+        ao.nome AS origem,
+        ad.nome AS destino,
+        v.horario_saida,
+        COUNT(r.id_reserva) AS poltronas_vendidas,
+        a.numero_poltronas AS capacidade,
+        CONCAT(ROUND((COUNT(r.id_reserva) / a.numero_poltronas) * 100, 2), '%') AS ocupacao,
+        SUM(r.valor_total) AS receita_total
+    FROM 
+        voos v
+    JOIN 
+        aeronaves a ON v.id_aeronave = a.id_aeronave
+    JOIN 
+        rotas rt ON v.id_rota = rt.id_rota
+    JOIN 
+        aeroportos ao ON rt.id_aeroporto_origem = ao.id_aeroporto
+    JOIN 
+        aeroportos ad ON rt.id_aeroporto_destino = ad.id_aeroporto
+    LEFT JOIN 
+        config_poltronas_voo cpv ON v.id_voo = cpv.id_voo
+    LEFT JOIN 
+        reservas r ON cpv.id_config = r.id_config AND r.status != 'Cancelada'
+    WHERE 
+        DATE(v.horario_saida) BETWEEN p_data_inicio AND p_data_fim
+    GROUP BY 
+        v.id_voo, v.numero_voo, a.modelo, ao.nome, ad.nome, v.horario_saida, a.numero_poltronas
+    ORDER BY 
+        ocupacao DESC;
+END //
+DELIMITER ;

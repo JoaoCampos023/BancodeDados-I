@@ -63,7 +63,10 @@ CREATE TABLE voos (
     status ENUM('Agendado', 'Embarque', 'Decolado', 'Aterrissado', 'Cancelado', 'Atrasado') DEFAULT 'Agendado',
     FOREIGN KEY (id_aeronave) REFERENCES aeronaves(id_aeronave),
     FOREIGN KEY (id_rota) REFERENCES rotas(id_rota),
-    CHECK (horario_chegada_previsto > horario_saida)
+    CHECK (horario_chegada_previsto > horario_saida),
+    CONSTRAINT chk_horarios_validos CHECK (
+    TIME(horario_saida) BETWEEN '05:00:00' AND '23:59:59' AND
+    TIME(horario_chegada_previsto) BETWEEN '05:00:00' AND '23:59:59')
 );
 
 -- Tabela de Configuração de Poltronas por Voo
@@ -72,6 +75,7 @@ CREATE TABLE config_poltronas_voo (
     id_voo INT NOT NULL,
     id_poltrona INT NOT NULL,
     disponivel BOOLEAN DEFAULT TRUE,
+    status_poltrona VARCHAR(10) GENERATED ALWAYS AS (CASE WHEN disponivel THEN 'Disponível' ELSE 'Ocupada' END) STORED,
     FOREIGN KEY (id_voo) REFERENCES voos(id_voo),
     FOREIGN KEY (id_poltrona) REFERENCES poltronas(id_poltrona),
     UNIQUE (id_voo, id_poltrona)
@@ -138,3 +142,38 @@ CREATE TABLE historico_voos (
     observacoes TEXT,
     FOREIGN KEY (id_voo) REFERENCES voos(id_voo)
 );
+
+-- Tabela de Auditoria de Voos
+CREATE TABLE auditoria_voo (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_voo INT NOT NULL,
+    status_anterior ENUM('Agendado', 'Embarque', 'Decolado', 'Aterrissado', 'Cancelado', 'Atrasado'),
+    status_novo ENUM('Agendado', 'Embarque', 'Decolado', 'Aterrissado', 'Cancelado', 'Atrasado'),
+    data_alteracao DATETIME,
+    usuario VARCHAR(50),
+    FOREIGN KEY (id_voo) REFERENCES voos(id_voo)
+);
+
+CREATE TABLE auditoria_reservas (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_reserva INT NOT NULL,
+    status_anterior ENUM('Confirmada', 'Cancelada', 'Em espera', 'Check-in realizado'),
+    status_novo ENUM('Confirmada', 'Cancelada', 'Em espera', 'Check-in realizado'),
+    valor_anterior DECIMAL(10,2),
+    valor_novo DECIMAL(10,2),
+    data_alteracao DATETIME,
+    usuario VARCHAR(50),
+    FOREIGN KEY (id_reserva) REFERENCES reservas(id_reserva)
+);
+
+-- Índices para melhorar performance
+CREATE INDEX idx_poltronas_aeronave ON poltronas(id_aeronave);
+CREATE INDEX idx_config_poltronas_voo ON config_poltronas_voo(id_voo, disponivel);
+CREATE INDEX idx_reservas_cliente ON reservas(id_cliente, data_reserva);
+CREATE INDEX idx_reservas_config ON reservas(id_config);
+CREATE INDEX idx_voos_rota ON voos(id_rota);
+CREATE INDEX idx_voos_aeronave ON voos(id_aeronave);
+CREATE INDEX idx_voos_status ON voos(status);
+CREATE INDEX idx_rotas_internacionais ON rotas(id_aeroporto_origem, id_aeroporto_destino);
+CREATE INDEX idx_clientes_nivel ON clientes(nivel_preferencia, milhas_accumuladas);
+CREATE INDEX idx_historico_voo_data ON historico_voos(id_voo, horario_saida_real);
